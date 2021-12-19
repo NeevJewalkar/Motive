@@ -1,0 +1,33 @@
+<html>
+
+<head>
+
+
+</head>
+
+<body>
+
+<h1> Home </h1>
+<h4> <%- Name %> </h4>
+<button onclick='window.location.href="/logout"'> logout </button>
+<button onclick='window.location.href="/create"'> create a motive </button>
+
+<script>
+
+let motives = <%- JSON.stringify(Motives) %>;
+
+motives.forEach(motive => {
+    let Melement = document.createElement('p')
+    Melement.innerHTML = motive.title;
+    Melement.addEventListener('click', () => {
+        window.location.href = `/motive/${motive.id}`;
+    })
+    document.body.appendChild(Melement);
+});
+
+
+</script>
+
+</body>
+
+</html>
