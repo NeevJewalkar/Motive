@@ -92,9 +92,43 @@ app.get('/login', (req, res) => {
 app.get('/create', (req, res) => {
     if (signedIn) {
         res.render('create')
-    } else {
+    } else if (signedIn == false) {
         res.redirect('/login')
+    } else {
+        res.redirect('/create/wait')
     }
+})
+
+app.get('/create/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script><script>
+    let socket = io('http://3.6.40.9:3003')
+     socket.emit('logged', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })   
+     socket.on('done', data => {
+         location.href = '/create/'
+     })
+     </script>`)
+
+     io.on('connection', socket => {
+         console.log('connected to client')
+         socket.on('logged', data => {
+             console.log('data')
+            if (data.val == 'true') {
+                signedIn = true
+                console.log(signedIn, 'val')
+                console.log(data.username)
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+
+                io.to(socket.id).emit('done')
+            }
+         })
+     })
 })
 
 app.get('/motive/:id', (req, res) => {
