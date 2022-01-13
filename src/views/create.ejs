@@ -132,7 +132,11 @@ body {
 <p class='text-base' style='margin-left: 35px; margin-top: 30px;'> Reward Amount </p>
 <input type='number' class='input' style='margin-top: 0px;' placeholder=" " name='Amount' id='rewardamount' min="1" max="9999">
 <br>
+<input type='text' name='username' id='usr' style='display: none'></p>
+<input type='text' name='email' id='eml' style='display: none'></p>
 <input type='submit' class='bg-gray-300 hover:bg-gray-400 text-gray-800 py-2' id='Add' value='Add'>
+
+
 </form>
 </div>
 <img src='../public/CAI.png' class='CAI desktop' id='CAI'>
@@ -142,6 +146,8 @@ body {
 
 <script>
 
+document.getElementById('usr').value = localStorage.getItem('user');
+document.getElementById('eml').value = localStorage.getItem('email');
 
 if (screen.width <= 480)  {
     document.querySelector('div[class="div"]').setAttribute('id', 'createMotivePhone')

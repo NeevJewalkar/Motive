@@ -19,6 +19,7 @@ app.use(express.static(__dirname));
 let signedIn = null
 let userHome = {}
 let tempuser = ''
+let tempemail = ''
 
 let base = 'localhost'
 
@@ -34,6 +35,7 @@ app.get('/', (req, res) => {
             tempuser = ''
             res.render('home', { Motives: userHome.motives, Name: userHome.username})
             signedIn = null
+            tempemail = ''
         })
     } else if (signedIn == false) {
         res.render('main')
@@ -159,8 +161,10 @@ app.get('/motive/:id/pledge', (req, res) => {
         } else {
             res.redirect('/motive/' + req.params.id + '/pledge/wait')
         }
-    } else {
+    } else if (signedIn == false) {
         res.redirect('/login')
+    } else {
+        res.redirect('/motive/' + req.params.id + '/pledge/wait')
     }
 })
 
@@ -198,27 +202,107 @@ app.get('/motive/:id/pledge/wait', (req, res) => {
 
 app.get('/motive/:id/unpledge', (req, res) => {
     if (signedIn) {
-        fetch('http://' + base + ':3000/motives/contacts/remove', { method: 'post', headers: { ID: req.params.id, Name: userHome.username } })
-        .then(res => res.json())
-        .then(data => {
-            console.log(data)
-            res.redirect('/motive/' + req.params.id)
-        })
-    } else {
+        if (tempuser != null) {
+            fetch('http://' + base + ':3000/motives/contacts/remove', { method: 'post', headers: { ID: req.params.id, Name: tempuser } })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data)
+                res.redirect('/motive/' + req.params.id)
+                tempuser = null
+                signedIn = null
+            })
+        } else {
+            res.redirect('/motive/' + req.params.id + '/unpledge/wait')
+        }
+    } else if (signedIn == false) {
         res.redirect('/login')
+    } else {
+        res.redirect('/motive/' + req.params.id + '/unpledge/wait')
     }
+})
+
+app.get('/motive/:id/unpledge/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    <script>
+
+    let socket = io('http://192.168.29.68:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = '/motive/${req.params.id}/unpledge'
+    })
+    
+    </script>`)
+
+    io.on('connection', socket => {
+        console.log('connected to client')
+        socket.on('user', data => {
+            if (data.val == 'true') {
+                console.log(data)
+                signedIn = true
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+                io.to(socket.id).emit('done')
+            }
+        })
+    })
 })
 
 app.get('/motive/:id/finish', (req, res) => {
     if (signedIn) {
-        fetch('http://' + base + ':3000/motives/finish', { method: 'post', headers: { ID: req.params.id, Username: userHome.username, value: 'true' } })
-        .then(res => res.json())
-        .then(data => {
-            res.redirect('/motive/' + req.params.id)
-        })
-    } else {
+        if (tempuser != null) {
+            fetch('http://' + base + ':3000/motives/finish', { method: 'post', headers: { ID: req.params.id, Username: userHome.username, value: 'true' } })
+            .then(res => res.json())
+            .then(data => {
+                res.redirect('/motive/' + req.params.id)
+                tempuser = null
+                signedIn = null
+            })
+        } else {
+            res.redirect('/motive/' + req.params.id + '/finish/wait')
+        }
+    } else if (signedIn == false) {
         res.redirect('/login')
+    } else {
+        res.redirect('/motive/' + req.params.id + '/finish/wait')
     }
+})
+
+app.get('/motive/:id/finish/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    <script>
+
+    let socket = io('http://192.168.29.68:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = '/motive/${req.params.id}/finish'
+    })
+    
+    </script>`)
+
+    io.on('connection', socket => {
+        console.log('connected to client')
+        socket.on('user', data => {
+            if (data.val == 'true') {
+                console.log(data)
+                signedIn = true
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+                io.to(socket.id).emit('done')
+            }
+        })
+    })
 })
 
 app.get('/logout', (req, res) => {
@@ -227,7 +311,7 @@ app.get('/logout', (req, res) => {
 })
 
 app.get('/wait', (req, res) => {
-    res.contentType('html').send(`<script>localStorage.setItem('user', '${tempuser}');localStorage.setItem('loggedin', 'true');location.href='/'</script>`)
+    res.contentType('html').send(`<script>localStorage.setItem('user', '${tempuser}');localStorage.setItem('loggedin', 'true');localStorage.setItem('email', '${tempemail}');location.href='/'</script>`)
 })
 
 app.post('/signup', (req, res) => {
@@ -260,6 +344,7 @@ app.post('/login', (req, res) => {
                 }
                 signedIn = true
                 tempuser = req.body.username
+                tempemail = mail
                 res.redirect('/wait')
             })
         }
@@ -267,30 +352,46 @@ app.post('/login', (req, res) => {
 })
 
 app.post('/create', (req, res) => {
-    console.log(userHome)
-    fetch('http://' + base + ':3000/motives/create', { method: 'post', headers: { Username: userHome.username, Email: userHome.email, Title: req.body.Title, Description: req.body.Description , Deadline: req.body.Deadline , Amount: req.body.Amount  } })
-    .then(res => res.json())
-    .then(data => {
-        console.log(data)
-        refreshUserData((temp) => {
-            console.log(userHome)
-            userHome = temp
-            res.redirect('/')
+    tempuser = req.body.username
+    tempemail = req.body.email
+    if (tempuser != null) {
+        console.log(userHome)
+        fetch('http://' + base + ':3000/motives/create', { method: 'post', headers: { Username: tempuser, Email: tempemail, Title: req.body.Title, Description: req.body.Description , Deadline: req.body.Deadline , Amount: req.body.Amount  } })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data)
+            refreshUserData((temp) => {
+                console.log(userHome)
+                userHome = temp
+                res.redirect('/')
+                tempuser = null
+                tempemail = null
+
+            })
         })
-    })
+    }
 })
 
 app.post('/pledge/:id', (req, res) => {
+    console.log(req.body.username, ' <–––––––––––––––––––')
+    tempuser = req.body.username
+    tempemail = req.body.email
     if (tempuser != null) {
-        fetch('http://' + base + ':3000/motives/contacts/add', { method: 'post', headers: { Name: userHome.username, Email: userHome.email, ID: req.params.id, Amount: req.body.Amount } })
+        fetch('http://' + base + ':3000/user/get', { method: 'post', headers: { Username: tempuser } })
         .then(res => res.json())
         .then(data => {
-            res.redirect('/motive/' + req.params.id)
+            console.log(data)
+            fetch('http://' + base + ':3000/motives/contacts/add', { method: 'post', headers: { Name: tempuser, Email: tempemail, ID: req.params.id, Amount: req.body.Amount } })
+            .then(res => res.json())
+            .then(data => {
+                res.redirect('/motive/' + req.params.id)
+                tempuser = null
+                tempemail = null
+            })
         })
-    } else {
-        res.redirect('/pledge/' + req.params.id + '/wait')
     }
 })
+
 
 app.listen(8028, () => {
     console.log('listening on port 8028')

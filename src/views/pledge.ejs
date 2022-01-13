@@ -16,9 +16,20 @@
 <form action="/pledge/<%- id %>" method="POST">
 
 <input name='Amount' type='number'>  </input>
+
+<input type='text' name='username' id='usr' style='display: none'></p>
+<input type='text' name='email' id='eml' style='display: none'></p>
 <input type="submit" value="Pledge">
 
+
 </form>
+
+<script>
+
+document.getElementById('usr').value = localStorage.getItem('user');
+document.getElementById('eml').value = localStorage.getItem('email');
+
+</script>
 
 </body>
 
