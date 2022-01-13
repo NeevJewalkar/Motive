@@ -8,5 +8,11 @@
     "build:css": "postcss public/stylesheets/tailwind.css -o public/stylesheets/style.css"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "mail": "^0.2.3",
+    "nodemailer": "^6.7.2",
+    "nodemon": "^2.0.15"
+  }
 }

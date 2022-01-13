@@ -56,22 +56,86 @@
 <body>
 
 <h1> <%- motive.title %> </h1>
+<h3 id='count'> </h3>
+<h3 id='amount'> </h3>
+<h3 id='percent'> </h3>
 <p> <%- motive.description %> </p>
 <p> Deadline <%- motive.deadline %> </p>
 <p> Amount: <%- motive.amount %> </p>
 
-<button id='pledge' onclick="window.location.href='/motive/<%- id %>/pledge'"> Donate </button>
+<p id='status'></p>
+<button id='pledge' onclick="window.location.href='/motive/<%- id %>/pledge'"> Pledge </button>
+<button id='unpledge' onclick="window.location.href='/motive/<%- id %>/unpledge'"> Unpledge </button>
 <button id='pledge' onclick="copyToClipboard(window.location.href)"> Share </button>
+<button id='Finish' onclick="window.location.href='/motive/<%- id %>/finish'"> Finish </button>
 
 <div id="snackbar">Copied To Clipboard</div>
 
 <script>
 
-let creater = <%= creater %>
+let count = <%- JSON.stringify(Contacts) %>;
+let contacts = <%- JSON.stringify(Contacts) %>;
+let motive = <%- JSON.stringify(motive) %>;
+
+let pledgedAmount = 0
+
+contacts.forEach(contact => {
+    if (contact.PledgedAmount !== "") {
+        pledgedAmount += parseInt(contact.PledgedAmount);
+    }
+});
+
+document.getElementById('amount').innerHTML = pledgedAmount + '/' + motive.amount;
+document.getElementById('count').innerHTML = count.length + " people have pledged to this motive";
+
+let percentPledged = ((pledgedAmount * 100) / motive.amount).toFixed(2)
+
+if (percentPledged == '-Infinity') {
+    percentPledged = 0;
+}
+
+document.getElementById('percent').innerHTML = percentPledged + '% pledged';
+
+let creater = <%= creater %>;
+let finish = <%= finished %>;
+let pledged = <%= pledged %>;
 
 if (creater) {
     document.getElementById('pledge').disabled = true;
     document.getElementById('pledge').style.display = 'none';
+    document.getElementById('Finish').disabled = false;
+    document.getElementById('Finish').style.display = 'block';
+    document.getElementById('unpledge').disabled = true;
+        document.getElementById('unpledge').style.display = 'none'; 
+} else {
+    document.getElementById('Finish').disabled = true;
+    document.getElementById('Finish').style.display = 'none';
+    if (pledged) {
+        document.getElementById('unpledge').disabled = false;
+        document.getElementById('unpledge').style.display = 'block';
+        document.getElementById('pledge').disabled = true;
+        document.getElementById('pledge').style.display = 'none';
+    } else {
+        document.getElementById('unpledge').disabled = true;
+        document.getElementById('unpledge').style.display = 'none';
+        document.getElementById('pledge').disabled = false;
+        document.getElementById('pledge').style.display = 'block';
+    }
+}
+
+if (finish) {
+    document.getElementById('pledge').disabled = true;
+    document.getElementById('pledge').style.display = 'none';
+    document.getElementById('Finish').disabled = false;
+    document.getElementById('Finish').style.display = 'none';
+    document.getElementById('status').innerHTML = 'This Motive is Finished, You can no Longer Pledge this motive';
+}
+
+if (!creater && pledged) {
+    document.getElementById('pledge').disabled = true;
+    document.getElementById('pledge').style.display = 'none';
+    document.getElementById('unpledge').disabled = false;
+    document.getElementById('unpledge').style.display = 'block';   
 }
 
 function copyToClipboard(text) {

@@ -2,27 +2,84 @@ const express = require('express')
 const fetch = require('node-fetch')
 const bodyParser = require('body-parser')
 const delay = require('delay')
+const { Server } = require('socket.io')
+
+const io = new Server(3003, { 
+    cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  } 
+})
 
 let app = express()
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.static(__dirname));
 
-let signedIn = false
+let signedIn = null
 let userHome = {}
+let tempuser = ''
 
-let base = '13.233.138.124'
+let base = 'localhost'
 
 app.get('/', (req, res) => {
+    console.log(signedIn, 'val')
     if (signedIn) {
-        res.render('home', { Motives: userHome.motives, Name: userHome.username})
-    } else {
+        fetch('http://' + base + ':3000/motives/get', { method: 'post', headers: { Username: tempuser } })
+        .then(resu => resu.json())
+        .then(data => {
+            console.log(tempuser)
+            userHome.motives = data
+            userHome.username = tempuser
+            tempuser = ''
+            res.render('home', { Motives: userHome.motives, Name: userHome.username})
+            signedIn = null
+        })
+    } else if (signedIn == false) {
         res.render('main')
+        signedIn = null
+        console.log(signedIn, 'val')
+    } else {
+        console.log('SignedIn Variable is Blank, assigining it a value...')
+        res.redirect('/home/wait')
     }
 })
 
 app.get('/signup', (req, res) => {
     res.render('signup')
+})
+
+app.get('/home/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script><script>
+    let socket = io('http://192.168.29.68:3003')
+     socket.emit('logged', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })   
+     socket.on('done', data => {
+         location.href = '/'
+     })
+     </script>`)
+
+     io.on('connection', socket => {
+         console.log('connected to client')
+         socket.on('logged', data => {
+             console.log('data')
+            if (data.val == 'true') {
+                signedIn = true
+                console.log(signedIn, 'val')
+                console.log(data.username)
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+
+                io.to(socket.id).emit('done')
+            }
+         })
+     })
+
 })
 
 app.get('/login', (req, res) => {
@@ -39,23 +96,125 @@ app.get('/create', (req, res) => {
 
 app.get('/motive/:id', (req, res) => {
     if (signedIn) {
-        fetch('http://' + base + ':3000/motives/id/get', { method: 'post', headers: { ID: req.params.id, Username: userHome.username } })
+        if (tempuser != null) {
+            fetch('http://' + base + ':3000/motives/id/get', { method: 'post', headers: { ID: req.params.id, Username: tempuser } })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data)
+                res.render('motive', { motive: data.Motive, creater: data.creater, pledged: data.pledged, id: req.params.id, Contacts: data.Contacts, finished: data.Finished })
+                tempuser = null
+            })
+        } else {
+            res.redirect('/motive/' + req.params.id + '/wait')
+        }
+    } else if (signedIn == false) {
+        res.redirect('/login')
+    } else {
+        res.redirect('/motive/' + req.params.id + '/wait')
+    }
+})
+
+app.get('/motive/:id/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    <script>
+
+    let socket = io('http://192.168.29.68:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = '/motive/${req.params.id}'
+    })
+    
+    </script>`)
+
+    io.on('connection', socket => {
+        console.log('connected to client')
+        socket.on('user', data => {
+            if (data.val == 'true') {
+                console.log(data)
+                signedIn = true
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+                io.to(socket.id).emit('done')
+            }
+        })
+    })
+
+})
+
+app.get('/motive/:id/pledge', (req, res) => {
+    if (signedIn) {
+        if (tempuser != null) {
+            fetch('http://' + base + ':3000/motives/id/get', { method: 'post', headers: { ID: req.params.id, Username: tempuser } })
+            .then(res => res.json())
+            .then(data => {
+                res.render('pledge', { id: req.params.id, username: tempuser, Title: data.Motive.Title })
+                tempuser = null
+            })
+        } else {
+            res.redirect('/motive/' + req.params.id + '/pledge/wait')
+        }
+    } else {
+        res.redirect('/login')
+    }
+})
+
+app.get('/motive/:id/pledge/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    <script>
+
+    let socket = io('http://192.168.29.68:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = '/motive/${req.params.id}/pledge'
+    })
+    
+    </script>`)
+
+    io.on('connection', socket => {
+        console.log('connected to client')
+        socket.on('user', data => {
+            if (data.val == 'true') {
+                console.log(data)
+                signedIn = true
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+                io.to(socket.id).emit('done')
+            }
+        })
+    })
+})
+
+app.get('/motive/:id/unpledge', (req, res) => {
+    if (signedIn) {
+        fetch('http://' + base + ':3000/motives/contacts/remove', { method: 'post', headers: { ID: req.params.id, Name: userHome.username } })
         .then(res => res.json())
         .then(data => {
             console.log(data)
-            res.render('motive', { motive: data.Motive, creater: data.creater, pledged: data.pledged, id: req.params.id })
+            res.redirect('/motive/' + req.params.id)
         })
     } else {
         res.redirect('/login')
     }
 })
 
-app.get('/motive/:id/pledge', (req, res) => {
+app.get('/motive/:id/finish', (req, res) => {
     if (signedIn) {
-        fetch('http://' + base + ':3000/motives/id/get', { method: 'post', headers: { ID: req.params.id, Username: userHome.username } })
+        fetch('http://' + base + ':3000/motives/finish', { method: 'post', headers: { ID: req.params.id, Username: userHome.username, value: 'true' } })
         .then(res => res.json())
         .then(data => {
-            res.render('pledge', { id: req.params.id, username: userHome.username, Title: data.Motive.Title })
+            res.redirect('/motive/' + req.params.id)
         })
     } else {
         res.redirect('/login')
@@ -63,9 +222,12 @@ app.get('/motive/:id/pledge', (req, res) => {
 })
 
 app.get('/logout', (req, res) => {
+    res.contentType('html').send(`<script>localStorage.setItem('loggedin', 'false');window.location.href = "/";</script>`)
     signedIn = false
-    userHome = {}
-    res.redirect('/')
+})
+
+app.get('/wait', (req, res) => {
+    res.contentType('html').send(`<script>localStorage.setItem('user', '${tempuser}');localStorage.setItem('loggedin', 'true');location.href='/'</script>`)
 })
 
 app.post('/signup', (req, res) => {
@@ -90,13 +252,15 @@ app.post('/login', (req, res) => {
             .then(res => res.json())
             .then(data => {
                 console.log(data)
+                
                 userHome = {
                     username: req.body.username,
                     motives: data,
                     email: mail
                 }
                 signedIn = true
-                res.redirect('/')
+                tempuser = req.body.username
+                res.redirect('/wait')
             })
         }
     })
@@ -117,11 +281,15 @@ app.post('/create', (req, res) => {
 })
 
 app.post('/pledge/:id', (req, res) => {
-    fetch('http://' + base + ':3000/motives/contacts/add', { method: 'post', headers: { Username: userHome.username, Email: userHome.email, ID: req.params.id, Amount: req.body.Amount } })
-    .then(res => res.json())
-    .then(data => {
-        res.redirect('/motive/' + req.params.id)
-    })
+    if (tempuser != null) {
+        fetch('http://' + base + ':3000/motives/contacts/add', { method: 'post', headers: { Name: userHome.username, Email: userHome.email, ID: req.params.id, Amount: req.body.Amount } })
+        .then(res => res.json())
+        .then(data => {
+            res.redirect('/motive/' + req.params.id)
+        })
+    } else {
+        res.redirect('/pledge/' + req.params.id + '/wait')
+    }
 })
 
 app.listen(8028, () => {
@@ -142,4 +310,14 @@ const refreshUserData = (cb) => {
 
         cb(temp);
     })
+}
+
+const getUserData = (user, cb) => {
+
+    fetch('http://' + base + ':3000/user/get', { method: 'post', headers: { Username: user } })
+    .then(res => res.json())
+    .then(data => {
+        cb({ name: user, email: data.Email })
+    })
+
 }
