@@ -21,7 +21,8 @@ let userHome = {}
 let tempuser = ''
 let tempemail = ''
 
-let base = 'localhost'
+
+let base = '13.233.138.124'
 
 app.get('/', (req, res) => {
     console.log(signedIn, 'val')
@@ -45,15 +46,15 @@ app.get('/', (req, res) => {
         console.log('SignedIn Variable is Blank, assigining it a value...')
         res.redirect('/home/wait')
     }
-})
+}) 
 
 app.get('/signup', (req, res) => {
     res.render('signup')
 })
 
 app.get('/home/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script><script>
-    let socket = io('http://192.168.29.68:3003')
+    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script><script>
+    let socket = io('http://3.6.40.9:3003')
      socket.emit('logged', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })   
      socket.on('done', data => {
          location.href = '/'
@@ -117,10 +118,10 @@ app.get('/motive/:id', (req, res) => {
 })
 
 app.get('/motive/:id/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://192.168.29.68:3003')
+    let socket = io('http://3.6.40.9:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}'
@@ -169,10 +170,10 @@ app.get('/motive/:id/pledge', (req, res) => {
 })
 
 app.get('/motive/:id/pledge/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://192.168.29.68:3003')
+    let socket = io('http://3.6.40.9:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}/pledge'
@@ -222,10 +223,10 @@ app.get('/motive/:id/unpledge', (req, res) => {
 })
 
 app.get('/motive/:id/unpledge/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://192.168.29.68:3003')
+    let socket = io('http://3.6.40.9:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}/unpledge'
@@ -274,10 +275,10 @@ app.get('/motive/:id/finish', (req, res) => {
 })
 
 app.get('/motive/:id/finish/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://192.168.29.68:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://192.168.29.68:3003')
+    let socket = io('http://3.6.40.9:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}/finish'
