@@ -1,0 +1,29 @@
+<html>
+
+<body>
+
+<h1> Updates </h1>
+
+<br>
+
+<button onclick='window.location.href="/motive/<%- id %>/updates/create"'> create an update </button>
+
+<script>
+
+    let updates = <%- JSON.stringify(data) %>;
+    updates = updates.reverse()
+
+    updates.forEach(update => {
+        let UelementText = document.createElement('p')
+        UelementText.innerHTML = update.text;
+        let UelementTimestamp = document.createElement('p')
+        UelementTimestamp.innerHTML = new Date(update.timestamp).toDateString();
+        document.body.appendChild(UelementTimestamp);
+        document.body.appendChild(UelementText);
+        document.body.appendChild(document.createElement('br'));
+    });
+</script>
+
+</body>
+
+</html>

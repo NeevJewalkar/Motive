@@ -13,7 +13,8 @@ const io = new Server(3003, {
 
 let app = express()
 app.set('view engine', 'ejs')
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.static(__dirname));
 
 let signedIn = null
@@ -21,8 +22,8 @@ let userHome = {}
 let tempuser = ''
 let tempemail = ''
 
-
-let base = '13.233.138.124'
+let client = 'localhost'
+let base = 'localhost'
 
 app.get('/', (req, res) => {
     console.log(signedIn, 'val')
@@ -53,8 +54,8 @@ app.get('/signup', (req, res) => {
 })
 
 app.get('/home/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script><script>
-    let socket = io('http://3.6.40.9:3003')
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script><script>
+    let socket = io('http://${client}:3003')
      socket.emit('logged', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })   
      socket.on('done', data => {
          location.href = '/'
@@ -100,8 +101,8 @@ app.get('/create', (req, res) => {
 })
 
 app.get('/create/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script><script>
-    let socket = io('http://3.6.40.9:3003')
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script><script>
+    let socket = io('http://${client}:3003')
      socket.emit('logged', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })   
      socket.on('done', data => {
          location.href = '/create/'
@@ -152,10 +153,10 @@ app.get('/motive/:id', (req, res) => {
 })
 
 app.get('/motive/:id/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://3.6.40.9:3003')
+    let socket = io('http://${client}:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}'
@@ -204,10 +205,10 @@ app.get('/motive/:id/pledge', (req, res) => {
 })
 
 app.get('/motive/:id/pledge/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://3.6.40.9:3003')
+    let socket = io('http://${client}:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}/pledge'
@@ -257,10 +258,10 @@ app.get('/motive/:id/unpledge', (req, res) => {
 })
 
 app.get('/motive/:id/unpledge/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://3.6.40.9:3003')
+    let socket = io('http://${client}:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}/unpledge'
@@ -309,10 +310,10 @@ app.get('/motive/:id/finish', (req, res) => {
 })
 
 app.get('/motive/:id/finish/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://3.6.40.9:3003/socket.io/socket.io.js"></script>
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
     <script>
 
-    let socket = io('http://3.6.40.9:3003')
+    let socket = io('http://${client}:3003')
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}/finish'
@@ -347,6 +348,95 @@ app.get('/logout', (req, res) => {
 
 app.get('/wait', (req, res) => {
     res.contentType('html').send(`<script>localStorage.setItem('user', '${tempuser}');localStorage.setItem('loggedin', 'true');localStorage.setItem('email', '${tempemail}');location.href='/'</script>`)
+})
+
+app.get('/motive/:id/updates', (req, res) => {
+    if (signedIn) {
+        fetch('http://' + base + ':3000/motives/updates/get', { method: 'post', headers: { ID: req.params.id } })
+        .then(res => res.json())
+        .then(data => {
+            res.render('updates', { data: data, id: req.params.id })
+            console.log(data)
+        })
+    } else if (signedIn == false) {
+        res.redirect('/login')
+    } else {
+        res.redirect('/motive/' + req.params.id + '/updates/wait')
+    }
+})
+
+app.get('/motive/:id/updates/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
+    <script>
+
+    let socket = io('http://${client}:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = '/motive/${req.params.id}/updates'
+    })
+    
+    </script>`)
+
+    io.on('connection', socket => {
+        console.log('connected to client')
+        socket.on('user', data => {
+            if (data.val == 'true') {
+                console.log(data)
+                signedIn = true
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+                io.to(socket.id).emit('done')
+            }
+        })
+    })
+})
+
+app.get('/motive/:id/updates/create', (req, res) => {
+    if (signedIn) {
+        res.render('uCreate', { id: req.params.id })
+    } else if (signedIn == false) {
+        res.redirect('/login')
+    } else {
+        res.redirect('/motive/' + req.params.id + '/updates/create/wait')
+    }
+})
+
+app.get('/motive/:id/updates/create/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
+    <script>
+
+    let socket = io('http://${client}:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = '/motive/${req.params.id}/updates/create'
+    })
+    
+    </script>`)
+
+    io.on('connection', socket => {
+        console.log('connected to client')
+        socket.on('user', data => {
+            if (data.val == 'true') {
+                console.log(data)
+                signedIn = true
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+                io.to(socket.id).emit('done')
+            }
+        })
+    })
 })
 
 app.post('/signup', (req, res) => {
@@ -387,23 +477,29 @@ app.post('/login', (req, res) => {
 })
 
 app.post('/create', (req, res) => {
+    console.log('creating motive')
     tempuser = req.body.username
     tempemail = req.body.email
+    console.log(req.body.username, '=======================')
     if (tempuser != null) {
+        console.log('tempuser and tempemail are not null')
         console.log(userHome)
         fetch('http://' + base + ':3000/motives/create', { method: 'post', headers: { Username: tempuser, Email: tempemail, Title: req.body.Title, Description: req.body.Description , Deadline: req.body.Deadline , Amount: req.body.Amount  } })
         .then(res => res.json())
         .then(data => {
-            console.log(data)
+            console.log(data, '≤–––––––––––––––––––––')
             refreshUserData((temp) => {
                 console.log(userHome)
                 userHome = temp
+                signedIn = null
                 res.redirect('/')
                 tempuser = null
                 tempemail = null
 
             })
         })
+    } else {
+        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~')
     }
 })
 
@@ -419,6 +515,25 @@ app.post('/pledge/:id', (req, res) => {
             fetch('http://' + base + ':3000/motives/contacts/add', { method: 'post', headers: { Name: tempuser, Email: tempemail, ID: req.params.id, Amount: req.body.Amount } })
             .then(res => res.json())
             .then(data => {
+                res.redirect('/motive/' + req.params.id)
+                tempuser = null
+                tempemail = null
+            })
+        })
+    }
+})
+
+app.post('/updates/:id/create', (req, res) => {
+    tempuser = req.body.username
+    tempemail = req.body.email
+    if (tempuser != null) {
+        fetch('http://' + base + ':3000/motives/updates/add', { method: 'post', headers: { ID: req.params.id, Update: '{ "timestamp": ' + Date.now() + ', "text": "' + req.body.text + '" }' } })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data)
+            refreshUserData((temp) => {
+                console.log(userHome)
+                userHome = temp
                 res.redirect('/motive/' + req.params.id)
                 tempuser = null
                 tempemail = null

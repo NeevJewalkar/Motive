@@ -1,0 +1,26 @@
+<html>
+
+<body>
+
+<h1> Making an Update </h1>
+
+<form action='/updates/<%- id %>/create' method='post'>
+
+<input name='text' type='text'>
+
+<input type='text' name='username' id='usr' style='display: none'></p>
+<input type='text' name='email' id='eml' style='display: none'></p>
+<input type='submit' value='create update'>
+
+</form>
+
+<script>
+
+document.getElementById('usr').value = localStorage.getItem('user');
+document.getElementById('eml').value = localStorage.getItem('email');
+
+</script>
+
+</body>
+
+</html>
