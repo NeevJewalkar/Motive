@@ -6,9 +6,16 @@
 
 <br>
 
-<button onclick='window.location.href="/motive/<%- id %>/updates/create"'> create an update </button>
+<button onclick='window.location.href="/motive/<%- id %>/updates/create"' id='update'> create an update </button>
 
 <script>
+
+    let creater = <%= creater %>;
+
+    if (!creater) {
+        document.getElementById('update').disabled = true;
+        document.getElementById('update').style.display = 'none';
+    }
 
     let updates = <%- JSON.stringify(data) %>;
     updates = updates.reverse()

@@ -352,10 +352,11 @@ app.get('/wait', (req, res) => {
 
 app.get('/motive/:id/updates', (req, res) => {
     if (signedIn) {
-        fetch('http://' + base + ':3000/motives/updates/get', { method: 'post', headers: { ID: req.params.id } })
+        console.log(tempuser)
+        fetch('http://' + base + ':3000/motives/updates/get', { method: 'post', headers: { ID: req.params.id, Username: tempuser } })
         .then(res => res.json())
         .then(data => {
-            res.render('updates', { data: data, id: req.params.id })
+            res.render('updates', { data: data.Updates, creater: data.creater, id: req.params.id })
             console.log(data)
         })
     } else if (signedIn == false) {
