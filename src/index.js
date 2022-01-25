@@ -352,13 +352,20 @@ app.get('/wait', (req, res) => {
 
 app.get('/motive/:id/updates', (req, res) => {
     if (signedIn) {
-        console.log(tempuser)
+        console.log(tempuser, 'ugweiurgwerygweurg')
+        if (tempuser != null) {
         fetch('http://' + base + ':3000/motives/updates/get', { method: 'post', headers: { ID: req.params.id, Username: tempuser } })
         .then(res => res.json())
         .then(data => {
             res.render('updates', { data: data.Updates, creater: data.creater, id: req.params.id })
             console.log(data)
+            tempuser = null
+            signedIn = null
         })
+        } else {
+            res.redirect('/motive/' + req.params.id + '/updates/wait')
+        }
+
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
@@ -416,6 +423,67 @@ app.get('/motive/:id/updates/create/wait', (req, res) => {
     socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
     socket.on('done', data => {
         location.href = '/motive/${req.params.id}/updates/create'
+    })
+    
+    </script>`)
+
+    io.on('connection', socket => {
+        console.log('connected to client')
+        socket.on('user', data => {
+            if (data.val == 'true') {
+                console.log(data)
+                signedIn = true
+                tempuser = data.username
+                refreshUserData(data => {
+                    userHome = data
+                    io.to(socket.id).emit('done')
+                })
+            } else {
+                signedIn = false
+                console.log(signedIn, 'val')
+                io.to(socket.id).emit('done')
+            }
+        })
+    })
+})
+
+app.get('/motive/:mId/update/:id', (req, res) => {
+    if (signedIn) {
+        fetch('http://' + base + ':3000/motives/update/get', { method: 'post', headers: { ID: req.params.mId, uID: req.params.id, Username: tempuser } })
+        .then(resu => resu.json())
+        .then(data => {
+            console.log(data.Update)
+            res.render('update', { content: data.Update.text, date: data.Update.timestamp, comments: data.Update.Comments, id: req.params.mId, uid: req.params.id })
+            console.log('got1')
+
+            io.on('connection', socket => {
+                console.log('connected to socket')
+                console.log('connected to client')
+                socket.on('comment', data => {
+                    console.log('got2')
+                    comment(req.params.mId, req.params.id, data.user, data.text, () => {
+                        console.log('got3')
+                        io.to(socket.id).emit('done')
+                    })
+                })
+            })
+        })
+    } else if (signedIn == false) {
+        res.redirect('/login')
+    } else {
+        res.redirect('/motive/' + req.params.mId + '/update/' + req.params.id + '/wait')
+    }
+
+})
+
+app.get('/motive/:mId/update/:id/wait', (req, res) => {
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
+    <script>
+
+    let socket = io('http://${client}:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = '/motive/${req.params.mId}/update/${req.params.id}/'
     })
     
     </script>`)
@@ -561,6 +629,16 @@ const refreshUserData = (cb) => {
         }
 
         cb(temp);
+    })
+}
+
+let comment = (id, uid, user, text, cb) => {
+    console.log(user, text)
+    fetch('http://' + base + ':3000/motives/update/comment/add', { method: 'post', headers: { ID: id, user: user, content: text, uID: uid } })
+    .then(res => res.json())
+    .then(data => {
+        console.log(data)
+        cb('added comment')
     })
 }
 

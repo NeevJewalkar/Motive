@@ -23,6 +23,9 @@
     updates.forEach(update => {
         let UelementText = document.createElement('p')
         UelementText.innerHTML = update.text;
+        UelementText.addEventListener('click', () => {
+            window.location.href = `/motive/<%- id %>/update/${update.ID}`
+        })
         let UelementTimestamp = document.createElement('p')
         UelementTimestamp.innerHTML = new Date(update.timestamp).toDateString();
         document.body.appendChild(UelementTimestamp);

@@ -1,0 +1,55 @@
+<html>
+
+<body>
+
+<h1> Update </h1>
+
+<br>
+
+<p> <%= content %> </p>
+<p id='date'></p>
+
+<p id='status'></p>
+<input type='text' id='text'>
+<input type='button' onclick='comment()' value='Comment'>
+
+<script src="http://localhost:3003/socket.io/socket.io.js"></script>
+<script>
+
+let ts = <%= date %>;
+document.getElementById('date').innerText = new Date(ts).toTimeString();
+
+let comments = <%- JSON.stringify(comments) %>;
+
+let socket = io('http://localhost:3003')
+
+comments.forEach(comment => {
+    let CelementText = document.createElement('p')
+    CelementText.innerText = comment.Content;
+    let CelementUser = document.createElement('p')
+    CelementUser.innerText = comment.User;
+
+    document.body.appendChild(CelementUser);
+    document.body.appendChild(CelementText);
+}); 
+
+socket.on('done', data => {
+    window.location.reload()
+})
+
+function comment() {
+    if (document.getElementById('text').value !== '') {
+    socket.emit('comment', {
+        user: localStorage.getItem('user'),
+        text: document.getElementById('text').value
+    });
+    } else {
+        document.getElementById('status').innerText = 'Please enter a comment';
+    }
+}
+
+</script>
+
+</body>
+
+</html>
