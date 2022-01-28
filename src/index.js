@@ -3,6 +3,7 @@ const fetch = require('node-fetch')
 const bodyParser = require('body-parser')
 const delay = require('delay')
 const { Server } = require('socket.io')
+const querystring = require('querystring');
 
 const io = new Server(3003, { 
     cors: {
@@ -25,6 +26,13 @@ let tempemail = ''
 let client = 'localhost'
 let base = 'localhost'
 
+/*
+let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.id
+        });
+res.redirect('/wait/?' + query);
+*/
+
 app.get('/', (req, res) => {
     console.log(signedIn, 'val')
     if (signedIn) {
@@ -41,49 +49,21 @@ app.get('/', (req, res) => {
         })
     } else if (signedIn == false) {
         res.render('main')
-        signedIn = null
-        console.log(signedIn, 'val')
+        let query = querystring.stringify({
+            "redirect": "/"
+        });
+        res.redirect('/wait/?' + query);
     } else {
         console.log('SignedIn Variable is Blank, assigining it a value...')
-        res.redirect('/home/wait')
+        let query = querystring.stringify({
+            "redirect": "/"
+        });
+        res.redirect('/wait/?' + query);
     }
 }) 
 
 app.get('/signup', (req, res) => {
     res.render('signup')
-})
-
-app.get('/home/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script><script>
-    let socket = io('http://${client}:3003')
-     socket.emit('logged', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })   
-     socket.on('done', data => {
-         location.href = '/'
-     })
-     </script>`)
-
-     io.on('connection', socket => {
-         console.log('connected to client')
-         socket.on('logged', data => {
-             console.log('data')
-            if (data.val == 'true') {
-                signedIn = true
-                console.log(signedIn, 'val')
-                console.log(data.username)
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-
-                io.to(socket.id).emit('done')
-            }
-         })
-     })
-
 })
 
 app.get('/login', (req, res) => {
@@ -96,40 +76,11 @@ app.get('/create', (req, res) => {
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/create/wait')
+        let query = querystring.stringify({
+            "redirect": "/create"
+        });
+        res.redirect('/wait/?' + query);
     }
-})
-
-app.get('/create/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script><script>
-    let socket = io('http://${client}:3003')
-     socket.emit('logged', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })   
-     socket.on('done', data => {
-         location.href = '/create/'
-     })
-     </script>`)
-
-     io.on('connection', socket => {
-         console.log('connected to client')
-         socket.on('logged', data => {
-             console.log('data')
-            if (data.val == 'true') {
-                signedIn = true
-                console.log(signedIn, 'val')
-                console.log(data.username)
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-
-                io.to(socket.id).emit('done')
-            }
-         })
-     })
 })
 
 app.get('/motive/:id', (req, res) => {
@@ -143,27 +94,23 @@ app.get('/motive/:id', (req, res) => {
                 tempuser = null
             })
         } else {
-            res.redirect('/motive/' + req.params.id + '/wait')
+            let query = querystring.stringify({
+                "redirect": "/motive/" + req.params.id
+            });
+            res.redirect('/wait/?' + query);
         }
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/motive/' + req.params.id + '/wait')
+        let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.id
+        });
+        res.redirect('/wait/?' + query);
     }
 })
 
-app.get('/motive/:id/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
-    <script>
-
-    let socket = io('http://${client}:3003')
-    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
-    socket.on('done', data => {
-        location.href = '/motive/${req.params.id}'
-    })
-    
-    </script>`)
-
+app.get('/wait', (req, res) => {
+    console.log(req.query.redirect, '≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤e')
     io.on('connection', socket => {
         console.log('connected to client')
         socket.on('user', data => {
@@ -171,18 +118,38 @@ app.get('/motive/:id/wait', (req, res) => {
                 console.log(data)
                 signedIn = true
                 tempuser = data.username
+                console.log(req.get('redirect'))
                 refreshUserData(data => {
                     userHome = data
-                    io.to(socket.id).emit('done')
+                    io.to(socket.id).emit('done', { url: req.query.redirect })
+                console.log(req.query.redirect)
                 })
             } else {
                 signedIn = false
                 console.log(signedIn, 'val')
-                io.to(socket.id).emit('done')
+                io.to(socket.id).emit('done', { url: req.query.redirect })
+                console.log(req.query.redirect)
             }
         })
     })
+    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
+    <script>
 
+    let socket = io('http://${client}:3003')
+    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
+    socket.on('done', data => {
+        location.href = new URLSearchParams(window.location.search).get('redirect')
+    })
+    
+    </script>`)
+
+    
+
+})
+
+
+app.get('/login/wait', (req, res) => {
+    res.contentType('html').send(`<script>localStorage.setItem('user', '${tempuser}');localStorage.setItem('loggedin', 'true');localStorage.setItem('email', '${tempemail}');location.href='/'</script>`)
 })
 
 app.get('/motive/:id/pledge', (req, res) => {
@@ -195,45 +162,16 @@ app.get('/motive/:id/pledge', (req, res) => {
                 tempuser = null
             })
         } else {
-            res.redirect('/motive/' + req.params.id + '/pledge/wait')
+            
         }
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/motive/' + req.params.id + '/pledge/wait')
+        let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.id + "/pledge"
+        });
+        res.redirect('/wait/?' + query);
     }
-})
-
-app.get('/motive/:id/pledge/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
-    <script>
-
-    let socket = io('http://${client}:3003')
-    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
-    socket.on('done', data => {
-        location.href = '/motive/${req.params.id}/pledge'
-    })
-    
-    </script>`)
-
-    io.on('connection', socket => {
-        console.log('connected to client')
-        socket.on('user', data => {
-            if (data.val == 'true') {
-                console.log(data)
-                signedIn = true
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-                io.to(socket.id).emit('done')
-            }
-        })
-    })
 })
 
 app.get('/motive/:id/unpledge', (req, res) => {
@@ -248,45 +186,19 @@ app.get('/motive/:id/unpledge', (req, res) => {
                 signedIn = null
             })
         } else {
-            res.redirect('/motive/' + req.params.id + '/unpledge/wait')
+            let query = querystring.stringify({
+                "redirect": "/motive/" + req.params.id + "/unpledge"
+            });
+            res.redirect('/wait/?' + query);
         }
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/motive/' + req.params.id + '/unpledge/wait')
+        let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.id + "/unpledge"
+        });
+        res.redirect('/wait/?' + query);
     }
-})
-
-app.get('/motive/:id/unpledge/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
-    <script>
-
-    let socket = io('http://${client}:3003')
-    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
-    socket.on('done', data => {
-        location.href = '/motive/${req.params.id}/unpledge'
-    })
-    
-    </script>`)
-
-    io.on('connection', socket => {
-        console.log('connected to client')
-        socket.on('user', data => {
-            if (data.val == 'true') {
-                console.log(data)
-                signedIn = true
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-                io.to(socket.id).emit('done')
-            }
-        })
-    })
 })
 
 app.get('/motive/:id/finish', (req, res) => {
@@ -300,45 +212,19 @@ app.get('/motive/:id/finish', (req, res) => {
                 signedIn = null
             })
         } else {
-            res.redirect('/motive/' + req.params.id + '/finish/wait')
+            let query = querystring.stringify({
+                "redirect": "/motive/" + req.params.id + "/finish"
+            });
+            res.redirect('/wait/?' + query);
         }
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/motive/' + req.params.id + '/finish/wait')
+        let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.id + "/finish"
+        });
+        res.redirect('/wait/?' + query);
     }
-})
-
-app.get('/motive/:id/finish/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
-    <script>
-
-    let socket = io('http://${client}:3003')
-    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
-    socket.on('done', data => {
-        location.href = '/motive/${req.params.id}/finish'
-    })
-    
-    </script>`)
-
-    io.on('connection', socket => {
-        console.log('connected to client')
-        socket.on('user', data => {
-            if (data.val == 'true') {
-                console.log(data)
-                signedIn = true
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-                io.to(socket.id).emit('done')
-            }
-        })
-    })
 })
 
 app.get('/logout', (req, res) => {
@@ -346,7 +232,7 @@ app.get('/logout', (req, res) => {
     signedIn = false
 })
 
-app.get('/wait', (req, res) => {
+app.get('/login/wait', (req, res) => {
     res.contentType('html').send(`<script>localStorage.setItem('user', '${tempuser}');localStorage.setItem('loggedin', 'true');localStorage.setItem('email', '${tempemail}');location.href='/'</script>`)
 })
 
@@ -363,47 +249,22 @@ app.get('/motive/:id/updates', (req, res) => {
             signedIn = null
         })
         } else {
-            res.redirect('/motive/' + req.params.id + '/updates/wait')
+            let query = querystring.stringify({
+                "redirect": "/motive/" + req.params.id + "/updates"
+            });
+            res.redirect('/wait/?' + query);
         }
 
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/motive/' + req.params.id + '/updates/wait')
+        let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.id + "/updates"
+        });
+        res.redirect('/wait/?' + query);
     }
 })
 
-app.get('/motive/:id/updates/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
-    <script>
-
-    let socket = io('http://${client}:3003')
-    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
-    socket.on('done', data => {
-        location.href = '/motive/${req.params.id}/updates'
-    })
-    
-    </script>`)
-
-    io.on('connection', socket => {
-        console.log('connected to client')
-        socket.on('user', data => {
-            if (data.val == 'true') {
-                console.log(data)
-                signedIn = true
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-                io.to(socket.id).emit('done')
-            }
-        })
-    })
-})
 
 app.get('/motive/:id/updates/create', (req, res) => {
     if (signedIn) {
@@ -411,40 +272,11 @@ app.get('/motive/:id/updates/create', (req, res) => {
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/motive/' + req.params.id + '/updates/create/wait')
+        let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.id + "/updates/create"
+        });
+        res.redirect('/wait/?' + query);
     }
-})
-
-app.get('/motive/:id/updates/create/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
-    <script>
-
-    let socket = io('http://${client}:3003')
-    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
-    socket.on('done', data => {
-        location.href = '/motive/${req.params.id}/updates/create'
-    })
-    
-    </script>`)
-
-    io.on('connection', socket => {
-        console.log('connected to client')
-        socket.on('user', data => {
-            if (data.val == 'true') {
-                console.log(data)
-                signedIn = true
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-                io.to(socket.id).emit('done')
-            }
-        })
-    })
 })
 
 app.get('/motive/:mId/update/:id', (req, res) => {
@@ -471,41 +303,13 @@ app.get('/motive/:mId/update/:id', (req, res) => {
     } else if (signedIn == false) {
         res.redirect('/login')
     } else {
-        res.redirect('/motive/' + req.params.mId + '/update/' + req.params.id + '/wait')
+        
+        let query = querystring.stringify({
+            "redirect": "/motive/" + req.params.mId + "/update/" + req.params.id
+        });
+        res.redirect('/wait/?' + query);
     }
 
-})
-
-app.get('/motive/:mId/update/:id/wait', (req, res) => {
-    res.contentType('html').send(`<script src="http://${client}:3003/socket.io/socket.io.js"></script>
-    <script>
-
-    let socket = io('http://${client}:3003')
-    socket.emit('user', { val: localStorage.getItem("loggedin"), username: localStorage.getItem("user") })
-    socket.on('done', data => {
-        location.href = '/motive/${req.params.mId}/update/${req.params.id}/'
-    })
-    
-    </script>`)
-
-    io.on('connection', socket => {
-        console.log('connected to client')
-        socket.on('user', data => {
-            if (data.val == 'true') {
-                console.log(data)
-                signedIn = true
-                tempuser = data.username
-                refreshUserData(data => {
-                    userHome = data
-                    io.to(socket.id).emit('done')
-                })
-            } else {
-                signedIn = false
-                console.log(signedIn, 'val')
-                io.to(socket.id).emit('done')
-            }
-        })
-    })
 })
 
 app.post('/signup', (req, res) => {
@@ -539,7 +343,7 @@ app.post('/login', (req, res) => {
                 signedIn = true
                 tempuser = req.body.username
                 tempemail = mail
-                res.redirect('/wait')
+                res.redirect('/login/wait')
             })
         }
     })
