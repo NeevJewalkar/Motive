@@ -279,6 +279,23 @@ app.get('/motive/:id/updates/create', (req, res) => {
     }
 })
 
+app.get('/users/:name', (req, res) => {
+    if (signedIn) {
+        fetch('http://' + base + ':3000/motives/get', { method: 'post', headers: { Username: req.params.name } })
+        .then(res => res.json())
+        .then(data => {
+            res.render('user', { Motives: data, Name: req.params.name })
+        })
+    } else if (signedIn == false) {
+        res.redirect('/login')
+    } else {
+        let query = querystring.stringify({
+            "redirect": "/users/" + req.params.name
+        });
+        res.redirect('/wait/?' + query);
+    }
+})
+
 app.get('/motive/:mId/update/:id', (req, res) => {
     if (signedIn) {
         fetch('http://' + base + ':3000/motives/update/get', { method: 'post', headers: { ID: req.params.mId, uID: req.params.id, Username: tempuser } })

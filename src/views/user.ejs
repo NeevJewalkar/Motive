@@ -1,0 +1,27 @@
+<html>
+
+<body>
+
+<h1> Home </h1>
+<h4> <%- Name %> </h4>
+
+<script>
+
+
+let motives = <%- JSON.stringify(Motives) %>;
+
+motives.forEach(motive => {
+    let Melement = document.createElement('p')
+    Melement.innerHTML = motive.title;
+    Melement.addEventListener('click', () => {
+
+        window.location.href = `/motive/${motive.id}`;
+    })
+    document.body.appendChild(Melement);
+});
+
+</script>
+
+</body>
+
+</html>
